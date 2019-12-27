@@ -1,0 +1,867 @@
+
+<?
+session_start();
+session_register("session");
+include "cc_libcallcenter.php";
+if (!isset($session)) { header("Location:" . HTTPHOST . DOCROOT . "cc_login.php");  exit;}
+
+require_once($_SERVER['DOCUMENT_ROOT'] . "/libs/ctr/ClasseCTR.php");
+require_once($_SERVER['DOCUMENT_ROOT'] . "/libs/func/BotFuncoes.php");
+require_once($_SERVER["DOCUMENT_ROOT"] . "/libs/lang/tradutor.php");
+require_once($_SERVER["DOCUMENT_ROOT"] . "/libs/cli/botParamArvore.php");
+$objTradutor = new Tradutor($session["idioma"], "BOT");
+
+$idBot             = "BT{$_REQUEST['bt_classe']}";
+$arrayClasse_i     = getArrayClasse("tb_bot_classe_hml", ConnectDB(), "descricao", "BT" . $_REQUEST['bt_classe'] . "I", "URANET",   "A", "");
+$arrayClasse_t     = getArrayClasse("tb_bot_classe_hml", ConnectDB(), "descricao", "BT" . $_REQUEST['bt_classe'] . "T", "URANET",   "A", "");
+$arrayClasse_GRATE = getArrayClasse("tb_classe", ConnectDB(), "valor-descricao", "GRATE", $_REQUEST["repre"],   "A", " and (vlr_classe like '" . $_REQUEST["nb"] . "U_' or vlr_classe = '" . $_REQUEST["nb"] . "00') ");
+
+$arrClassesBot  = array("D", "I", "T", "V", "X", "S", "R", "Z", "N");
+$botParamArvore = new botParamArvore($_REQUEST['bt_classe'], $session['representante'], $arrClassesBot);
+$arryDif        = $botParamArvore->comparaDiferenca();
+?>
+<!-- <!doctype html> -->
+<html>
+<head>
+<title><?print $session["sistema"];?></title>
+<meta http-equiv="x-ua-compatible" content="IE=edge">
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="-1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<script type="text/javascript" src="/js/jquery-1.10.2.min.js"></script>
+<!-- *************** CSS *************** -->
+<!-- bootstrap -->
+<?  print IntergrAllHeader();   ?>
+<link rel="stylesheet" type="text/css" href="\css\botParamV2.css">
+<!-- plugins -->
+<script type="text/javascript" src="consistencia.js"></script>
+</head>
+
+<body>
+    <header>
+        <div id="titulo_bot"></div>
+        <ul id="versionamento"></ul>
+
+        <ul>
+            <li onclick="mostrar()"><span style="background:#00000020; padding: 3px 10px 3px 10px; border-radius: 4px; border-left-width: 1px; cursor: pointer;"><i class="warning i-notification"></i>4 Alterações</span></li>
+            <li><span><label>Ambiente</label>: Dev</span></li>
+            <li><span><label>Grupos</label>: Blalal</span></li>
+            <li><span><label>Idiomas</label>:PT</span></li>
+        </ul>
+    </header>
+
+
+    <form name="bot_param">
+        <input type="hidden" name="representante"   value="<?=$_REQUEST['repre']?>">
+        <input type="hidden" name="bot_classe"      value="<?=$_REQUEST['bt_classe']?>">
+        <input type="hidden" name="nb"              value="<?=$_REQUEST['nb']?>">
+    </form>
+
+    <div id="posiciona">
+        <div id="fechar"><i class="i-close" onclick="ocultar();"></i></div>
+    </div>
+    
+    <div id="menuDiagrama" style="position:relative;">
+    </div>
+
+    <div id="montaDiagrama" style="position:relative; border: 1px solid red; height: 85vh"></div>
+
+    <?print GerarRodape($voltar);?>
+
+</body>
+
+<script type="text/javascript" src="/js/botParamV2.js"></script>
+<script type="text/javascript">
+    $('#montaDiagrama').arvoreDecisao({
+        representante : $("input[name=representante]").val(),
+        bot_classe    : $("input[name=bot_classe]").val(),
+        nb            : $("input[name=nb]").val(),
+        URL           : "bot_param_arvore_ajaxV2.php"
+    });
+</script>
+</html>
+
+
+
+
+*{
+	margin: 0px;
+	box-sizing: border-box;
+}
+
+.conector-bottom-right{
+	position:absolute;
+	border-bottom: 1px solid;
+	border-right: 1px solid;
+	border-bottom-right-radius: 5px;
+}
+
+.conector-bottom-left{
+	position:absolute;
+	border-bottom: 1px solid;
+	border-left: 1px solid;
+	border-bottom-left-radius: 5px;
+}
+
+.conector-top-right{
+	position:absolute;
+	border-top: 1px solid;
+	border-right: 1px solid;
+	border-top-right-radius: 5px;
+}
+
+.conector-top-left{
+	position:absolute;
+	border-top: 1px solid;
+	border-left: 1px solid;
+	border-top-left-radius: 5px;
+}
+
+.caixa-intecao {
+	position: absolute;
+	width: 200px !important;
+	transition: opacity 1s;
+	padding: 5px;
+	box-shadow: 0px 0px 7px rgba(0, 0, 0, 0.25);
+	display: table;
+	background: white;
+	border-radius: 12px;
+	z-index: 1
+}
+
+.caixa-intecao > .caixa-intencao-titulo > .condicaoBot {
+	vertical-align: top;
+	font-size: 10px;
+	font-weight: 600;
+	overflow: hidden;
+	line-height: 15px;
+	display: inline-block;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	margin-bottom: 5px;
+	margin-right: 5px;
+	padding: 4px;
+	border-radius: 10px;
+}
+
+.caixa-intencao-icone > i {
+	font-size: 12px;
+	cursor: pointer;
+}
+
+.caixa-intecao > .caixa-intencao-titulo {
+	display: flex;
+	justify-content: space-between;
+}
+
+.intencao-titulo{
+	vertical-align: top;
+	font-size: 10px;
+	font-weight: 600;
+	overflow: hidden;
+	line-height: 15px;
+	display: inline-block;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	margin-bottom: 5px;
+	margin-right: 5px;
+	padding: 4px;
+	border-radius: 10px;
+}
+
+.caixa-intencao-corpo{
+	padding: 0;
+	width: 90%;
+}
+
+.caixa-intencao-corpo .intencao-titulo {
+	display: block;
+	width: 100%;
+	padding: 10px 20px 0 10px;
+	max-width: 199px;
+	font-size: 10px;
+	font-weight: bold;
+	color: #26344a;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	background: white;
+	margin-bottom: 5px;
+}
+
+
+.intencao-info{
+	padding: 0 5px 0 5px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-size: 10px;
+    letter-spacing: 0.2px;
+}
+
+
+.intencao-info  > .condicaoBot{
+	padding: 0 5px 0 5px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.intencao-info  > .condicaoBot{
+	vertical-align: top;
+	margin-bottom: 5px;
+	display: inline-block;
+	background: #00acac!important;
+	font-size: 10px;
+	font-weight: 600;
+	overflow: hidden;
+	border-radius: 50px;
+}
+
+.caixa-intecao.encerrar > .caixa-intencao-titulo {
+	display: flex;
+	justify-content: space-between;
+    margin-right: 15px;
+    margin-left: 15px;
+}
+
+.caixa-intecao.encerrar {
+	border: 1px solid;
+	border-color: red;
+	border-radius: 50px !important;
+	width: 150px !important;
+}
+
+.caixa-intecao.encerrar > .caixa-intencao-titulo > .condicaoBot {
+	background-color: red;
+	color: #fff;
+    margin-right: 15px;
+    margin-left: 15px;
+}
+
+.caixa-intecao.iniciar > .caixa-intencao-titulo {
+	display: flex;
+	justify-content: space-between;
+    margin-right: 15px;
+    margin-left: 15px;
+}
+
+.caixa-intecao.iniciar {
+	border: 1px solid;
+	border-color: rgb(58, 185, 98);
+	border-radius: 25px !important;
+}
+
+.caixa-intecao.iniciar > .caixa-intencao-titulo > .condicaoBot {
+	background-color: rgb(58, 185, 98);
+	color: #fff;
+    margin-right: 5px;
+    margin-left: 5px;
+}
+
+
+.caixa-intecao.aguarda {
+	border: 1px solid;
+	border-color: rgb(0, 126, 255);
+}
+
+.caixa-intecao.aguarda > .caixa-intencao-titulo > .condicaoBot {
+	background-color: rgb(0, 126, 255);
+	color: #fff;
+}
+
+.caixa-intecao.temporizador {
+	border: 1px solid;
+	border-color: rgb(87, 24, 127);
+}
+
+.caixa-intecao.temporizador > .caixa-intencao-titulo > .condicaoBot {
+	background-color: rgb(87, 24, 127);
+	color: #fff;
+}
+
+.caixa-intecao.transferir {
+	border: 1px solid;
+	border-color: rgb(234, 167, 36);
+}
+
+.caixa-intecao.transferir > .caixa-intencao-titulo > .condicaoBot {
+	background-color: rgb(234, 167, 36);
+	color: #fff;
+}
+
+.caixa-intecao.rotina {
+	border: 1px solid;
+	border-color: rgb(74, 74, 74);
+}
+
+.caixa-intecao.rotina > .caixa-intencao-titulo > .condicaoBot {
+	background-color: rgb(74, 74, 74);
+	color: #fff;
+}
+
+.label-acao{
+	padding: 0 5px 0 5px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	cursor: pointer;
+}
+
+#posiciona {
+	position: absolute;
+	margin: 0 auto;
+	width: 50vw;
+	height: 100vh;
+	right: 0;
+	top: 0;
+	background-color: #FFF;
+	box-shadow: 0 0 4px grey;
+	padding: 20px;
+	box-sizing: border-box;
+	border-radius: 2px;
+	z-index: 9;
+	display: none;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+div.condicaoBot.bg-green {
+	background: #00acac50 !important;
+	border-radius: 25px;
+}
+
+div.condicaoBot.bg-purple {
+	background: #727cb650 !important;
+	border-radius: 25px;
+}
+
+div.condicaoBot.bg-yellow {
+	background: #e3fa3e50 !important;
+	border-radius: 25px;
+}
+  #versao{
+    padding: 15px 15px;
+    line-height: 10px;
+  }
+
+
+.intergrall-color {
+	color: #f55;
+}
+
+
+
+
+
+
+  .configure {
+    float: right; 
+    font-size: 14px;
+    color: #999;
+    cursor: pointer;
+    margin-right: 10px;
+  }
+
+
+
+
+  .draggableEle .objName2 {
+    display: block;
+    max-width: 199px;
+    font-size: 10px;
+    font-weight: bold;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+
+  }
+
+  .draggableEle .objDesc {
+    display: block;
+    padding: 0 20px 5px 10px;
+    font-size: 14px;
+    font-style: italic;
+    letter-spacing: 0.2px;
+    color: #26344a;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .marginTop10 {
+    margin-top: 10px;
+  }
+
+
+
+  .draggableEle .lbl_direcionamento {
+    padding: 0 15px 0 10px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 165;
+  }
+
+
+  .draggableEle .connectionInfo .colorBlock {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    background-color: orange;
+    border-radius: 50%;
+    float: left;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    text-align: center;
+    line-height: 17px;
+    margin-top: 3px;
+  }
+
+
+
+  #recebe_arvore{
+    background-color: #58a3b321;
+  }
+
+  .sidenav {
+    height: 87vh;
+    width: 0;
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    background-color: #efefef50;
+    overflow-x: hidden;
+    transition: 0.5s;
+    padding-top: 10px;
+  }
+
+  .sidenav a {
+    padding: 8px 8px 8px 32px;
+    text-decoration: none;
+    display: block;
+    transition: 0.3s;
+  }
+
+  .sidenav .closebtn {
+    position: absolute;
+    top: 0;
+    right: 25px;
+    font-size: 36px;
+    margin-left: 50px;
+  }
+
+  #main {
+    transition: margin-left .5s;
+    padding: 16px;
+  }
+
+  @media screen and (max-height: 450px) {
+    .sidenav {padding-top: 15px;}
+    .sidenav a {font-size: 18px;}
+  }
+
+  .navegador{
+    display: flex;
+    justify-content: space-between;
+  }
+
+
+
+
+  #zoom-minus{
+    position: absolute;
+    top: 5vh;
+    left: 50px;
+    z-index: 999;
+  }
+
+  #zoom-plus{
+    position: absolute;
+    top: 0vh;
+    left: 50px;
+    z-index: 999;
+  }
+
+  #custom-search-input{
+    padding: 3px;
+    border: solid 1px #E4E4E4;
+    border-radius: 6px;
+    background-color: #fff;
+  }
+
+  #custom-search-input input{
+    border: 0;
+    box-shadow: none;
+  }
+
+  #custom-search-input button{
+    margin: 2px 0 0 0;
+    background: none;
+    box-shadow: none;
+    border: 0;
+    color: #666666;
+    padding: 0 8px 0 10px;
+    border-left: solid 1px #ccc;
+  }
+
+  #custom-search-input button:hover{
+    border: 0;
+    box-shadow: none;
+    border-left: solid 1px #ccc;
+  }
+
+  #custom-search-input .glyphicon-search{
+    font-size: 23px;
+  }
+
+  .nav-pills.nav-stacked{
+    padding: 5px;
+    display: flex;
+    justify-content: space-between;
+    color: #fff;
+    background-color: #337ab7;
+  }
+
+  .tf-custom .tf-nc {
+    width: 150px;
+    padding: 3;
+  }
+
+
+
+
+  .navbar-default{
+    background-color: #efefef;
+    margin:0px!important;
+  }
+
+  .tree{
+    width: 10px;
+  }
+
+  .tf-tree li {
+    padding:0;
+  }
+
+
+body {
+	background: #cccccc60 !important;
+}
+
+header {
+	background: #fff;
+	-webkit-box-shadow: inset 0px 0px 0px 1px rgba(0,0,0,0.5);
+	box-shadow: inset 0px 0px 0px 1px rgba(0,0,0,0.5);
+	height: 40px;
+	padding-right: 5px;
+}
+
+
+
+ul {
+	display: flex;
+	list-style: none;
+	justify-content: space-between;
+}
+
+
+
+#meio {
+	top: 50%;
+	left: 50%;
+}
+
+#fundo {
+	bottom: 0;
+	right: 0;
+}
+
+#meio, #fundo {
+    background: #ccd;
+    padding: 30px;
+    position: absolute;
+    border: 2px solid #500;
+    cursor: pointer;
+}
+
+header {
+	display: flex;
+	justify-content: space-between;
+}
+
+header span, ul, #titulo_bot {
+	margin-top: 15px;
+	margin-left: 5px;
+	margin-right: 5px;
+}
+
+
+
+    .teste_append{
+        background: #000000;
+        width: 100px;
+        height: 100px;
+    }
+
+
+
+
+
+    .conectores{
+        background-color:black;
+        position:absolute;
+        height:2px;
+        width: 10px;
+        z-index: 9;
+    }
+
+    body {background-color: #CCC; font-family: Tahoma,Arial;}
+
+
+
+    #fechar { 
+        margin: 5px;
+        font-size: 12px;
+        top: 0;
+        left: 0;
+    }
+
+    div {
+        opacity: 1;
+        transition: opacity .5s linear;
+    }
+
+    div.hide {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+
+
+
+(function( opcao ) {
+	let linhas = [];
+	let titulo, versao, intencao;
+	let tema = {
+		reproduzir : {1: "xxxxx"},
+	}
+
+	let metodos = {
+		addDiv : function( parametro ) {
+			let $elDirecionamento = $("<div>");
+			let $elIntencao       = $("<div>");
+
+			if( typeof parametro['direcionamento'] == 'object' ){
+				$.each(parametro['direcionamento'], function(index, obj){
+					$elDirecionamento.append($("<div>", {class: "lbl_direcionamento"}).append($("<div>", {class: "nodeTypeName bg-yellow-darker", style:"border-color: #c47d15!important;"}).append($("<span>", {class: "objName2", text: obj.titulo}))))
+				})
+			}
+
+			let $caixaIntencao = $("<div>", { class: "caixa-intecao "+parametro.tipo, id: parametro.id, style: parametro.position}).append(
+						$("<div>", {class: "caixa-intencao-titulo"}).append(
+							$("<div>", {class: "caixa-intencao-icone"}).append(
+								$("<i>", { class: "i-cogs"}),
+								$("<i>", { class: "i-plus-circle-2 green"}),
+								$("<i>", { class: "i-move"}),
+								$("<i>", { class: "i-filter-4"})
+							),
+							$("<span>", {class: "condicaoBot", text: parametro.label})
+						),
+						$("<div>", {class: "caixa-intencao-corpo"}).append(
+							$("<span>", {class: "intencao-titulo", text: parametro.titulo }),
+
+						)
+					)
+
+			if(parametro.acao != undefined)
+			{
+				$.each(parametro.acao, function(index, el){
+					$caixaIntencao.find(".caixa-intencao-corpo").append($("<div>", {class: "intencao-info", id: el.id }).append($("<span>", {class: "condicaoBot", text: index+1}), $("<span>", {class: "label-acao", text: el.titulo})))
+				})
+			}
+
+			return 	$caixaIntencao
+		},
+
+		addLinha : function( param ){
+			return $("<div>", { class: "linha", id: param });
+		},
+
+		gravaCordenada : function(url, repre, bot_classe, nb, intencao){
+			let request = new XMLHttpRequest()
+				request.open("POST", url, true)
+				request.setRequestHeader("Content-type", "application/x-www-form-urlencoded")
+				request.send("&representante="+repre+"&bot_classe="+bot_classe+"&nb="+nb+"&acao=gravaCordenada&intencao="+intencao.getAttribute('id')+"&position="+intencao.getAttribute('style'))
+
+				request.onreadystatechange = function() {
+					if (request.readyState == 4 && request.status == 200) {
+						request.responseText;
+					}
+				}
+		},
+
+		carregaBOT( url, repre, bot_classe, nb ){ // Gambiara resolver
+			request = new XMLHttpRequest();
+			request.open('POST', url, false);
+			request.setRequestHeader("Content-type", "application/x-www-form-urlencoded")
+			request.send("&acao=infoBot&representante="+repre+"&bot_classe="+bot_classe+"&nb="+nb);
+
+			request.onreadystatechange = () => {
+				if(request.readyState == 4) {
+					if(request.status == 200) {
+						return JSON.parse(request.responseText)
+					} else {
+						console.log(request.responseText);
+						reject(request.responseText);
+					}
+				}
+			}
+			return JSON.parse(request.responseText);
+		},
+
+		getDistanciaEL : function ( x1, y1, x2, y2 ) {
+			return Math.sqrt( ( ( x1 - x2 ) * ( x1 - x2 ) ) + ( ( y1 - y2 ) * ( y1 - y2 ) ) ); 
+		},
+
+		getCoordenadas : function( parametro ){
+			try {
+
+				var pai   = $("#"+parametro[0]).offset();
+				var filho = $("#"+parametro[1]).offset();
+
+				var x1     = parseInt(pai.left, 10) + parseInt($("#"+parametro[0]).outerWidth() / 2, 10)
+				var x2     = parseInt(filho.left)   + parseInt($("#"+parametro[1]).outerWidth()  / 2, 10)
+
+				var y1     = parseInt(pai.top, 10) //+ parseInt($("#"+parametro[0]).outerHeight() / 2, 10)
+				var y2     = parseInt(filho.top)   // + parseInt($("#"+parametro[1]).outerHeight() / 2, 10)
+
+				var height = metodos.getDistanciaEL( x2, y1, x2, y2 );
+				var width  = metodos.getDistanciaEL( x1, y1, x2, y1 );
+
+				metodos.posicionarCOnector(x1, y1, x2, y2, parametro[2], height, width);
+
+			} catch(e) {
+				console.log(e, parametro);
+			}
+		},
+
+		posicionarCOnector : function ( x1, y1, x2, y2, linhaID,  height, width ) {
+			var xMeio = ( x1 + x2 ) / 2
+			var linha = document.getElementById(linhaID)
+
+				linha.classList    = ""
+				linha.style.width  = width
+				linha.style.height = height
+
+			if(y1 > y2){
+				linha.style.top    = ( y1 - height)
+				linha.style.left   = xMeio - ( width / 2 )
+
+				if(x1 > x2){
+					linha.classList.add("conector-bottom-left")
+				}else{
+					linha.classList.add("conector-bottom-right")
+				}
+			}else{
+				linha.style.top    = y1
+				linha.style.left   = xMeio - (width/2)
+
+				if(x1 > x2){
+					linha.classList.add("conector-top-left")
+				}else{
+					linha.classList.add("conector-top-right")
+				}
+			}
+		},
+
+
+	    carregaObjeto : function( parametro ) {
+	    	console.log(parametro)
+			return parametro.intencao;
+		}
+	};
+
+	$.fn.arvoreDecisao = function(parametro) {
+
+		this.on("click", ".i-plus-circle-2", function(){
+			alert("xxxxx")
+		})
+
+		let botParam = parametro;
+		let objBOT   = metodos.carregaBOT(botParam.URL, botParam.representante, botParam.bot_classe, botParam.nb, this)
+		let intencao = metodos.carregaObjeto( objBOT );
+		let contador = 0;
+
+		$.each(intencao, function(index, el){
+			contador++;
+			$("#montaDiagrama").append(metodos.addDiv(this))
+			$("#montaDiagrama").append(metodos.addLinha("linha_"+contador))
+		})
+
+		linhas.push(["inicio", "pre_saudacao", "linha_1"]);
+		linhas.push(["inicio", "valida_cpf_cnpj___erro_interno", "linha_5"]);
+		linhas.push(["inicio", "saudacao", "linha_2"]);
+		linhas.push(["saudacao", "pre_saudacao", "linha_3"]);
+		linhas.push(["sair_saudacao", "pre_saudacao", "linha_4"]);
+
+		$.each(linhas, function(index,  el){
+			metodos.getCoordenadas(el)
+		})
+
+		$(".caixa-intecao").draggable({
+			containment: "parent",
+			handle: ".i-move",
+			drag: function(){
+
+		linhas.push(["lbl_pre_saudacao", "pre_saudacao", "linha_1"]);
+		linhas.push(["inicio", "valida_cpf_cnpj___erro_interno", "linha_5"]);
+		linhas.push(["inicio", "saudacao", "linha_2"]);
+
+		$.each(linhas, function(index,  el){
+			metodos.getCoordenadas(el)
+		})
+			},
+			stop: function(){
+				metodos.gravaCordenada(botParam.URL, botParam.representante, botParam.bot_classe, botParam.nb, this)
+
+
+			}
+		});
+	};
+})( jQuery );
